@@ -1,0 +1,18 @@
+services:
+  pg_grafana:
+    image: postgres:15
+    container_name: pg_grafana
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: my_grafana_db
+      POSTGRES_USER: my_grafana_user
+      POSTGRES_PASSWORD: my_grafana_pwd
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - observability-net
+
+networks:
+  observability-net:
+    external: true
+    name: observability_observability-net

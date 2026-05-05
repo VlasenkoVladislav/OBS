@@ -1,0 +1,9 @@
+./db_grafana/data
+./grafana/data*.log
+data/
+pdf/
+png/
+csv/
+unified-search/
+postgres/
+tmp/
