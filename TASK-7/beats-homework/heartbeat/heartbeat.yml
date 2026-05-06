@@ -1,0 +1,48 @@
+heartbeat.monitors:
+  - type: http
+    id: dvwa-web
+    name: "DVWA Web Interface"
+    enabled: true
+    urls: ["http://nginx:80"]
+    schedule: "@every 30s"
+    timeout: 5s
+    check.response:
+      status: [200, 302]
+
+  - type: tcp
+    id: mysql-port
+    name: "MySQL Port 3306"
+    enabled: true
+    hosts: ["db:3306"]
+    schedule: "@every 30s"
+    timeout: 5s
+
+  - type: http
+    id: elasticsearch-health
+    name: "Elasticsearch Health"
+    enabled: true
+    urls: ["http://elasticsearch:9200/_cluster/health"]
+    schedule: "@every 60s"
+    timeout: 10s
+    check.response:
+      status: [200]
+
+  - type: http
+    id: kibana-health
+    name: "Kibana Status"
+    enabled: true
+    urls: ["http://kibana:5601/api/status"]
+    schedule: "@every 60s"
+    timeout: 10s
+
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+
+setup.kibana:
+  host: "http://kibana:5601"
+
+setup.ilm.enabled: false
+setup.template.enabled: true
+setup.dashboards.enabled: false
+
+logging.level: info

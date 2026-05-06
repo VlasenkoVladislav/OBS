@@ -1,0 +1,63 @@
+metricbeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+
+metricbeat.modules:
+
+  - module: system
+    metricsets:
+      - cpu
+      - load
+      - memory
+      - network
+      - process
+      - process_summary
+      - diskio
+      - filesystem
+      - fsstat
+    enabled: true
+    period: 30s
+    processes: [".*"]
+    cpu.metrics: ["percentages", "normalized_percentages"]
+    core.metrics: ["percentages"]
+
+  - module: nginx
+    metricsets:
+      - stubstatus
+    enabled: true
+    period: 30s
+    hosts: ["http://nginx:80"]
+    server_status_path: "/nginx_status"
+
+  - module: mysql
+    metricsets:
+      - status
+      - galera_status
+    enabled: true
+    period: 30s
+    hosts: ["root:root@tcp(db:3306)/"]
+
+  - module: docker
+    metricsets:
+      - container
+      - cpu
+      - diskio
+      - healthcheck
+      - info
+      - memory
+      - network
+    enabled: true
+    period: 30s
+    hosts: ["unix:///var/run/docker.sock"]
+
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+
+setup.kibana:
+  host: "http://kibana:5601"
+
+setup.ilm.enabled: false
+setup.template.enabled: true
+setup.dashboards.enabled: false
+
+logging.level: info

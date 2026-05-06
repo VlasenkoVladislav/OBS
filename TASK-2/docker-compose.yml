@@ -1,0 +1,35 @@
+services:
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - observability-net
+    depends_on:
+      - mimir
+ 
+  node_exporter:
+    image: prom/node-exporter
+    ports:
+      - "9100:9100"
+    networks:
+      - observability-net
+ 
+  mimir:
+    image: grafana/mimir:latest
+    command: ["-config.file=/etc/mimir/mimir.yaml"]
+    ports:
+      - "9009:9009"
+    volumes:
+      - ./mimir.yaml:/etc/mimir/mimir.yaml
+      - ./data/mimir-main:/data/mimir
+    networks:
+      - observability-net
+    restart: unless-stopped
+ 
+networks:
+  observability-net:
+    external: true
+    name: observability_observability-net

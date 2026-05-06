@@ -1,0 +1,42 @@
+groups:
+  - name: node_alerts
+    rules:
+      # Нода недоступна
+      - alert: NodeDown
+        expr: up{job="node"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node down: {{ $labels.instance }}"
+          description: "Node exporter не отвечает более 1 минуты"
+
+      # Высокий Load Average
+      - alert: HighLoadAverage
+        expr: node_load1 > count(node_cpu_seconds_total{mode="idle"}) * 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High load average on {{ $labels.instance }}"
+          description: "Load1 = {{ $value | printf \"%.2f\" }}"
+
+      # Сайт недоступен (blackbox)
+      - alert: SiteDown
+        expr: probe_success{job="blackbox"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Site DOWN: {{ $labels.instance }}"
+          description: "HTTP probe failed на {{ $labels.instance }}"
+
+      # Медленный ответ сайта
+      - alert: SlowResponseTime
+        expr: probe_duration_seconds{job="blackbox"} > 2
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow response: {{ $labels.instance }}"
+          description: "Response time = {{ $value | printf \"%.2f\" }}s (threshold: 2s)"

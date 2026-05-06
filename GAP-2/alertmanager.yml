@@ -1,0 +1,60 @@
+global:
+  resolve_timeout: 5m
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+route:
+  receiver: 'telegram-warning'
+  group_by: ['alertname', 'job', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+  routes:
+    - matchers:
+        - severity = critical
+      receiver: 'telegram-critical'
+      group_wait: 10s
+      repeat_interval: 1h
+    - matchers:
+        - severity = warning
+      receiver: 'telegram-warning'
+      repeat_interval: 4h
+inhibit_rules:
+  - source_matchers:
+      - severity = critical
+    target_matchers:
+      - severity = warning
+    equal: ['alertname', 'job', 'instance']
+
+
+
+receivers:
+  - name: 'telegram-critical'
+    telegram_configs:
+      - bot_token: '***************************'
+        chat_id: -5032395847
+        parse_mode: 'HTML'
+        message: |
+          🔴 <b>[CRITICAL] {{ .GroupLabels.alertname }}</b>
+          {{ range .Alerts }}
+          <b>Instance:</b> {{ .Labels.instance }}
+          <b>Job:</b>      {{ .Labels.job }}
+          <b>Summary:</b>  {{ .Annotations.summary }}
+          <b>Description:</b> {{ .Annotations.description }}
+          <b>Started:</b>  {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          {{ end }}
+
+  - name: 'telegram-warning'
+    telegram_configs:
+      - bot_token: '***************************'
+        chat_id: -5102719397
+        parse_mode: 'HTML'
+        message: |
+          🟡 <b>[WARNING] {{ .GroupLabels.alertname }}</b>
+          {{ range .Alerts }}
+          <b>Instance:</b> {{ .Labels.instance }}
+          <b>Job:</b>      {{ .Labels.job }}
+          <b>Summary:</b>  {{ .Annotations.summary }}
+          <b>Description:</b> {{ .Annotations.description }}
+          <b>Started:</b>  {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          {{ end }}

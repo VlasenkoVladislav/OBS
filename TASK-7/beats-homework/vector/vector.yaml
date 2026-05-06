@@ -1,0 +1,29 @@
+sources:
+  nginx_file:
+    type: file
+    include:
+      - /var/log/nginx/access.log
+
+transforms:
+  parse_nginx:
+    type: remap
+    inputs:
+      - nginx_file
+    source: |
+      parsed, err = parse_regex(.message, r'^(?P<client_ip>\S+) - (?P<remote_user>\S+) \[(?P<timestamp>[^\]]+)\] "(?P<http_method>\S+) (?P<request_uri>\S+) HTTP/(?P<http_version>[\d.]+)" (?P<status_code>\d+) (?P<bytes_sent>\d+) "(?P<http_referer>[^"]*)" "(?P<user_agent>[^"]*)"$')
+      if err == null {
+        . = merge(., parsed)
+        .status_code = to_int!(.status_code)
+        .bytes_sent = to_int!(.bytes_sent)
+        del(.message)
+      }
+
+sinks:
+  elasticsearch_out:
+    type: elasticsearch
+    inputs:
+      - parse_nginx
+    endpoints:
+      - http://elasticsearch:9200
+    bulk:
+      index: "nginx-vector-%Y.%m.%d"

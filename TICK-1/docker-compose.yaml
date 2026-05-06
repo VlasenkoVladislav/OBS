@@ -1,0 +1,92 @@
+services:
+  influxdb:
+    image: influxdb:1.8
+    ports:
+      - "8086:8086"
+    volumes:
+      - ./influxdb:/var/lib/influxdb
+    networks:
+      - observability-net
+    restart: unless-stopped
+
+  chronograf:
+    image: chronograf:1.9
+    ports:
+      - "8888:8888"
+    depends_on:
+      - influxdb
+    networks:
+      - observability-net
+    restart: unless-stopped
+
+  kapacitor:
+    image: kapacitor:1.6
+    container_name: kapacitor
+    ports:
+      - "9092:9092"
+    depends_on:
+      - influxdb
+    volumes:
+      - ./kapacitor/kapacitor.conf:/etc/kapacitor/kapacitor.conf:ro
+    hostname: kapacitor
+    environment:
+      KAPACITOR_CONFIG_PATH: /etc/kapacitor/kapacitor.conf      
+    networks:
+      - observability-net
+    restart: unless-stopped
+
+  telegraf:
+    image: telegraf:1.30
+    volumes:
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - influxdb
+    networks:
+      - observability-net
+    restart: unless-stopped
+
+  db:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: dvwa
+      MYSQL_USER: dvwa
+      MYSQL_PASSWORD: dvwa
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - observability-net
+    restart: unless-stopped
+
+  dvwa:
+    image: vulnerables/web-dvwa
+    depends_on:
+      - db
+    environment:
+      DB_SERVER: db
+      DB_DATABASE: dvwa
+      DB_USER: dvwa
+      DB_PASSWORD: dvwa
+    networks:
+      - observability-net
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - dvwa
+    networks:
+      - observability-net
+    restart: unless-stopped
+
+volumes:
+  db_data:
+
+networks:
+  observability-net:
+    driver: bridge

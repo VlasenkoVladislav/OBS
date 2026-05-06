@@ -1,0 +1,91 @@
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/nginx/access.log
+    fields:
+      service: nginx
+      log_type: access
+    fields_under_root: true
+
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/nginx/error.log
+    fields:
+      service: nginx
+      log_type: error
+    fields_under_root: true
+
+  - type: container
+    enabled: true
+    paths:
+      - /var/lib/docker/containers/*/*.log
+    processors:
+      - add_docker_metadata:
+          host: "unix:///var/run/docker.sock"
+      - drop_event:
+          when:
+            not:
+              or:
+                - contains:
+                    container.name: "db"
+                - contains:
+                    container.name: "mysql"
+    fields:
+      service: mysql
+      log_type: database
+    fields_under_root: true
+
+  - type: container
+    enabled: true
+    paths:
+      - /var/lib/docker/containers/*/*.log
+    processors:
+      - add_docker_metadata:
+          host: "unix:///var/run/docker.sock"
+      - drop_event:
+          when:
+            not:
+              contains:
+                container.name: "dvwa"
+    fields:
+      service: dvwa
+      log_type: php
+    fields_under_root: true
+
+filebeat.modules:
+  - module: nginx
+    access:
+      enabled: true
+      var.paths: ["/var/log/nginx/access.log"]
+    error:
+      enabled: true
+      var.paths: ["/var/log/nginx/error.log"]
+
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+  indices:
+    - index: "filebeat-nginx-%{+yyyy.MM.dd}"
+      when.equals:
+        service: "nginx"
+    - index: "filebeat-mysql-%{+yyyy.MM.dd}"
+      when.equals:
+        service: "mysql"
+    - index: "filebeat-dvwa-%{+yyyy.MM.dd}"
+      when.equals:
+        service: "dvwa"
+
+setup.kibana:
+  host: "http://kibana:5601"
+
+setup.ilm.enabled: false
+setup.template.enabled: true
+setup.dashboards.enabled: false
+
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat.log
+  keepfiles: 3

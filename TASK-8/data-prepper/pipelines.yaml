@@ -1,0 +1,24 @@
+nginx-pipeline:
+  source:
+    http:
+      port: 2021
+      path: /log/ingest
+
+  processor:
+    - grok:
+        match:
+          log:
+            - '%{IPORHOST:client_ip} - %{DATA:remote_user} \[%{HTTPDATE:timestamp}\] "%{WORD:http_method} %{DATA:request_uri} HTTP/%{NUMBER:http_version}" %{NUMBER:status_code} %{NUMBER:bytes_sent} "%{DATA:http_referer}" "%{DATA:user_agent}"'
+    - convert_entry_type:
+        key: status_code
+        type: integer
+    - convert_entry_type:
+        key: bytes_sent
+        type: integer
+
+  sink:
+    - opensearch:
+        hosts:
+          - http://opensearch:9200
+        index: nginx-logs-%{yyyy.MM.dd}
+        insecure: true
