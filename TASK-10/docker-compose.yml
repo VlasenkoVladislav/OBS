@@ -1,0 +1,41 @@
+services:
+  grafana:
+      container_name: grafana
+      image: grafana/grafana:latest
+      user: "472:472"
+      environment:
+        GF_SECURITY_ADMIN_USER: admin
+        GF_SECURITY_ADMIN_PASSWORD: admin
+      ports:
+        - "3000:3000"
+      volumes:
+        - ./data/grafana:/var/lib/grafana
+      networks:
+        - observability-net
+        
+  loki:
+    image: grafana/loki:3.5
+    container_name: loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    command:
+      - "-config.file=/etc/loki/loki-config.yml"
+      - "-config.expand-env=true"
+    volumes:
+      - ./config/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - ./loki-data:/data/loki
+    networks:
+      - observability-net
+    environment:
+      - TZ=Europe/Moscow
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3100/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+networks:
+  observability-net:
+    external: true
+    name: observability_observability-net

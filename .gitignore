@@ -17,3 +17,6 @@
 *.log
 ./.env.env
 *.env
+/TASK-9
+*.etc
+TASK-10/loki-data/

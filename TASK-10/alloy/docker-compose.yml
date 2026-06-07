@@ -1,0 +1,26 @@
+services:
+  alloy:
+    image: grafana/alloy:v1.11.3
+    container_name: alloy
+    volumes:
+      - ./etc/data:/var/lib/alloy/data
+      - /var/log:/var/log:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /run/udev:/run/udev:ro
+      - ./config.alloy:/etc/alloy/config.alloy:ro
+    ports:
+      - "12345:12345"
+      - "514:514/udp"
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --server.http.listen-addr=0.0.0.0:12345
+    networks:
+      - observability-net
+
+networks:
+  observability-net:
+    external: true
+    name: observability_observability-net

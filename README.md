@@ -13,3 +13,5 @@ My Home Work
 7. Task 7 lesson 22 - TASK-6 + Readme ✅
 8. Task 8 lesson 23 - TASK-7 + Readme ✅
 9. Task 9 lesson 26 - TASK-8 + Readme ✅
+9. Task 10 lesson 27 - TASK-9 + Readme 
+9. Task 11 lesson 28 - TASK-10 + Readme 
