@@ -9,7 +9,6 @@ loki.process "filter_old_logs" {
   }
 }
 
-// Docker логи
 discovery.docker "docker_discovery" {
   host = "unix:///var/run/docker.sock"
 }
@@ -19,71 +18,33 @@ discovery.relabel "docker_logs" {
 
   rule {
     source_labels = ["__meta_docker_container_name"]
-    regex = "/(.*)"
-    target_label = "container"
-    replacement = "$1"
-  }
-
-  rule {
-    source_labels = ["__meta_docker_container_name"]
-    regex = "/(.*)"
-    target_label = "container_name"
-    replacement = "$1"
+    regex         = "/(.*)"
+    target_label  = "container"
+    replacement   = "$1"
   }
 
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
-    target_label = "service"
-  }
-
-  rule {
-    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
-    target_label = "service_name"
+    target_label  = "service"
   }
 
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
-    target_label = "project"
+    target_label  = "project"
   }
 
   rule {
-    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
-    target_label = "project_name"
-  }
-
-  rule {
-    source_labels = ["__meta_docker_container_image"]
-    target_label = "image"
-  }
-
-  rule {
-    source_labels = ["__meta_docker_container_command"]
-    target_label = "command"
-  }
-
-  rule {
-    source_labels = ["__meta_docker_container_name"]
-    regex = "/(.*)"
     target_label = "job"
-    replacement = "docker"
-  }
-
-  rule {
-    source_labels = ["__meta_docker_container_name"]
-    regex = "/(.*)"
-    target_label = "instance"
-    replacement = "$1"
+    replacement  = "docker"
   }
 }
 
 loki.source.docker "docker_logs" {
-  host       = "unix:///var/run/docker.sock"
-  targets    = discovery.relabel.docker_logs.output
+  host    = "unix:///var/run/docker.sock"
+  targets = discovery.relabel.docker_logs.output
 
-  labels     = {
-    "job"      = "docker",
+  labels = {
     "instance" = env("HOSTNAME"),
-    "__path__" = "/var/lib/docker/containers/*/*.log",
   }
 
   forward_to = [loki.process.filter_old_logs.receiver]
