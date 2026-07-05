@@ -1,0 +1,122 @@
+services:
+  db:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: dvwa
+      MYSQL_USER: dvwa
+      MYSQL_PASSWORD: dvwa
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./logs/mysql:/var/log/mysql
+    networks:
+      - observability-net
+    restart: unless-stopped
+
+  dvwa:
+    image: vulnerables/web-dvwa
+    depends_on:
+      - db
+    environment:
+      DB_SERVER: db
+      DB_DATABASE: dvwa
+      DB_USER: dvwa
+      DB_PASSWORD: dvwa
+    networks:
+      - observability-net
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - dvwa
+    networks:
+      - observability-net
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:4.4
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - observability-net
+    restart: unless-stopped
+
+  opensearch:
+    image: opensearchproject/opensearch:1.3.14
+    environment:
+      - discovery.type=single-node
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+      - DISABLE_SECURITY_PLUGIN=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+    ports:
+      - "9200:9200"
+    volumes:
+      - os_data:/usr/share/opensearch/data
+    networks:
+      - observability-net
+    restart: unless-stopped
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+  graylog:
+    image: graylog/graylog:4.3
+    container_name: graylog-server
+    environment:
+      - GRAYLOG_NODE_ID_FILE=/usr/share/graylog/data/config/node-id
+      - GRAYLOG_PASSWORD_SECRET=Z9nVq7XkLmP2RtYwF5JsHdG8CbNxA3UeM
+      - GRAYLOG_ROOT_PASSWORD_SHA2=8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
+      - GRAYLOG_HTTP_BIND_ADDRESS=0.0.0.0:9000
+      - GRAYLOG_HTTP_EXTERNAL_URI=http://localhost:9000/
+      - GRAYLOG_ELASTICSEARCH_HOSTS=http://opensearch:9200
+      - GRAYLOG_MONGODB_URI=mongodb://mongodb:27017/graylog
+      - GRAYLOG_ROOT_TIMEZONE=UTC
+      - GRAYLOG_SERVER_JAVA_OPTS=-Xms512m -Xmx512m -XX:MaxDirectMemorySize=128m
+      - GRAYLOG_MESSAGE_JOURNAL_MAX_SIZE=512mb
+    depends_on:
+      - opensearch
+      - mongodb
+    ports:
+      - "9000:9000"
+      - "12201:12201/udp"
+      - "12201:12201/tcp"
+      - "5044:5044"
+      - "1514:1514/udp"
+      - "5140:5140/udp"
+    volumes:
+      - graylog_data:/usr/share/graylog/data
+    networks:
+      - observability-net
+    restart: unless-stopped
+
+  data-prepper:
+    image: opensearchproject/data-prepper:2.8.0
+    container_name: data-prepper
+    volumes:
+      - ./config/data-prepper/pipelines.yaml:/usr/share/data-prepper/pipelines/pipelines.yaml:ro
+      - ./config/data-prepper/data-prepper-config.yaml:/usr/share/data-prepper/config/data-prepper-config.yaml:ro
+    depends_on:
+      - opensearch
+    ports:
+      - "2021:2021"
+      - "21890:21890"
+    networks:
+      - observability-net
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  os_data:
+  mongo_data:
+  graylog_data:
+
+networks:
+  observability-net:
+    driver: bridge

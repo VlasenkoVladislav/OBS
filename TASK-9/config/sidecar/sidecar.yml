@@ -1,0 +1,15 @@
+server_url: "http://graylog:9000/api/"
+server_api_token: "g4dv2s97t5b4hqbegl9tcdhd2kpom1q40rgrmmhu7t7n4et7ql9"
+node_id: "app-host-sidecar"
+node_name: "app-host"
+update_interval: 10
+tls_skip_verify: true
+send_status: true
+list_log_files:
+  - "/var/log/nginx"
+  - "/var/log/mysql"
+  - "/var/log/php"
+log_path: "/var/log/graylog-sidecar"
+cache_path: "/var/cache/graylog-sidecar"
+collector_binaries_whitelist:
+  - "/usr/lib/graylog-sidecar/filebeat"

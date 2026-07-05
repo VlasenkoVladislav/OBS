@@ -1,0 +1,13 @@
+log-pipeline:
+  source:
+    http:
+      port: 21890
+  processor:
+    - grok:
+        match:
+          message: ["%{COMMONAPACHELOG}"]
+  sink:
+    - opensearch:
+        hosts: ["http://opensearch:9200"]
+        insecure: true
+        index: "dataprepper-logs"
