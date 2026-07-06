@@ -1,0 +1,24 @@
+services:
+  tempo:
+    image: grafana/tempo:2.9.0
+    container_name: tempo
+    hostname: tempo
+    user: "root:root"
+    ports:
+      - "3200:3200"
+      - "4317:4317"
+      - "4318:4318"
+      - "9095:9095"
+      - "7946:7946"
+    command: -config.file=/etc/tempo.yml
+    volumes:
+      - ./config/tempo/tempo.yml:/etc/tempo.yml #конфиг
+      - ./data/tempo:/data/tempo
+    restart: unless-stopped
+    networks:
+      - observability-net
+
+networks:
+  observability-net:
+    external: true
+    name: observability_observability-net

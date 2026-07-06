@@ -1,0 +1,83 @@
+services:
+  # MAIN
+  mimir-main:
+    image: grafana/mimir:3.0.4
+    container_name: mimir-main
+    hostname: mimir-main
+    ports:
+      - "9009:9009"
+    expose:
+      - "9095"
+      - "9096"
+    command:
+      - "-config.file=/etc/mimir.yml"
+      - "-target=distributor,query-frontend,query-scheduler,querier,ruler,alertmanager,compactor,store-gateway"
+      - "-server.http-listen-port=9009"
+    environment:
+      INSTANCE_ID: mimir-main
+      HOSTNAME: mimir-main
+    volumes:
+      - ./config/mimir/mimir-main.yml:/etc/mimir.yml
+      - ./data/mimir-main:/data/mimir
+    networks:
+      - observability-net
+    restart: unless-stopped
+
+  # INGESTER 1
+  mimir-ingester-1:
+    image: grafana/mimir:3.0.4
+    container_name: mimir-ingester-1
+    hostname: mimir-ingester-1
+    expose:
+      - "9095"
+      - "9096"
+    command:
+      - "-config.file=/etc/mimir.yml"
+      - "-target=ingester"
+      - "-server.grpc-listen-port=9095"
+      - "-memberlist.bind-port=9096"
+      - "-ingester.ring.instance-id=mimir-ingester-1"
+      - "-ingester.ring.instance-addr=mimir-ingester-1"
+    environment:
+      INSTANCE_ID: mimir-ingester-1
+      HOSTNAME: mimir-ingester-1
+    volumes:
+      - ./config/mimir/mimir-node.yml:/etc/mimir.yml
+      - ./data/mimir-ingester-1:/data/mimir
+    networks:
+      - observability-net
+    restart: unless-stopped
+    depends_on:
+      - mimir-main
+
+  # INGESTER 2
+  mimir-ingester-2:
+    image: grafana/mimir:3.0.4
+    container_name: mimir-ingester-2
+    hostname: mimir-ingester-2
+    expose:
+      - "9095"
+      - "9096"
+    command:
+      - "-config.file=/etc/mimir.yml"
+      - "-target=ingester"
+      - "-server.grpc-listen-port=9095"
+      - "-memberlist.bind-port=9096"
+      - "-ingester.ring.instance-id=mimir-ingester-2"
+      - "-ingester.ring.instance-addr=mimir-ingester-2"
+    environment:
+      INSTANCE_ID: mimir-ingester-2
+      HOSTNAME: mimir-ingester-2
+    volumes:
+      - ./config/mimir/mimir-node.yml:/etc/mimir.yml
+      - ./data/mimir-ingester-2:/data/mimir
+    networks:
+      - observability-net
+    restart: unless-stopped
+    depends_on:
+      - mimir-main
+
+networks:
+  observability-net:
+    external: true
+    name: observability_observability-net

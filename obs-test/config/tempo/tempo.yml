@@ -1,0 +1,90 @@
+server:
+  http_listen_port: 3200
+  grpc_listen_port: 9095
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+ingester:
+  max_block_duration: 5m
+  trace_idle_period: 10s
+  lifecycler:
+    ring:
+      kvstore:
+        store: memberlist
+      replication_factor: 1
+
+compactor:
+  compaction:
+    compaction_window: 1h
+    max_compaction_objects: 1000000
+    block_retention: 720h
+
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /data/tempo/wal
+    local:
+      path: /data/tempo/blocks
+
+metrics_generator:
+  traces_storage:
+    path: /data/tempo/metrics-generator/traces
+
+  storage:
+    path: /data/tempo/metrics-generator
+    remote_write:
+      - url: http://192.168.250.135:9009/api/v1/push
+
+  ring:
+    kvstore:
+      store: memberlist
+
+  processor:
+    service_graphs:
+      wait: 2s
+      max_items: 10000
+      peer_attributes: ["peer.service"]
+
+    span_metrics:
+      intrinsic_dimensions:
+        service: true
+        span_name: true
+        status_code: true
+      histogram_buckets:
+        [
+          0.002,
+          0.004,
+          0.008,
+          0.016,
+          0.032,
+          0.064,
+          0.128,
+          0.256,
+          0.512,
+          1.024,
+          2.048,
+          4.096,
+        ]
+
+    local_blocks:
+      max_live_traces: 10000
+      max_block_duration: 1m
+      max_block_bytes: 50000000
+      flush_to_storage: true
+      filter_server_spans: false
+
+overrides:
+  ingestion_rate_limit_bytes: 150000000
+  max_traces_per_user: 10000000
+  metrics_generator_processors:
+    - service-graphs
+    - span-metrics
+    - local-blocks

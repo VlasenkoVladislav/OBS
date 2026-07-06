@@ -1,0 +1,20 @@
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    environment:
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=admin123
+    volumes:
+      - ./data/s3:/data
+    ports:
+      - "19000:9000"
+      - "19001:9001"
+    command: server /data --console-address ":9001"
+    restart: always
+    networks:
+      - observability_observability-net
+
+networks:
+  observability_observability-net:
+    external: true

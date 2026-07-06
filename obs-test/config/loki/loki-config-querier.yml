@@ -1,0 +1,119 @@
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9097
+  grpc_server_max_recv_msg_size: 536870912
+  grpc_server_max_send_msg_size: 536870912
+
+target: distributor,query-scheduler,compactor,index-gateway
+
+memberlist:
+  bind_port: 7946
+  join_members:
+    - loki-main:7946
+    - loki-1:7946
+    - loki-2:7946
+    - loki-3:7946
+    - loki-querier-1:7946
+    - loki-querier-2:7946
+    - loki-querier-3:7946
+    - loki-query-frontend:7946
+
+distributor:
+  ring:
+    kvstore:
+      store: memberlist
+    instance_id: "loki-main"
+    instance_addr: "loki-main"
+    instance_port: 9097
+
+common:
+  path_prefix: /data/loki
+  replication_factor: 3
+  compactor_address: "http://loki-main:3100"
+  compactor_grpc_address: "loki-main:9097"
+  ring:
+    kvstore:
+      store: memberlist
+    heartbeat_timeout: 1m
+    heartbeat_period: 15s
+    instance_id: "loki-main"
+    instance_addr: "loki-main"
+    instance_port: 9097
+    num_tokens: 128
+
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: s3
+      schema: v13
+      index:
+        prefix: index_date_
+        period: 24h
+
+storage_config:
+  aws:
+    endpoint: minio:9000
+    s3forcepathstyle: true
+    bucketnames: loki
+    access_key_id: KAWN6W9RLRHOTUV8RNMB
+    secret_access_key: tsurs59GbYFejS01+lUmoP6ZiCwaKugB1sWPAZbE
+    region: main
+    insecure: true
+  # индексы в S3
+  tsdb_shipper:
+    active_index_directory: /data/loki/index
+    cache_location: /data/loki/cache
+
+  index_queries_cache_config:
+    embedded_cache:
+      enabled: true
+      max_size_mb: 65536
+
+compactor:
+  working_directory: /data/loki/compactor
+  compaction_interval: 1h
+  retention_enabled: true
+  retention_delete_delay: 2h
+  delete_request_cancel_period: 24h
+  delete_batch_size: 50
+  delete_request_store: s3
+  delete_request_store_key_prefix: "deletes/"
+  apply_retention_interval: 2h
+  retention_delete_worker_count: 200
+  max_compaction_parallelism: 4
+
+index_gateway:
+  mode: simple
+  ring:
+    kvstore:
+      store: memberlist
+    replication_factor: 3
+
+limits_config:
+  volume_enabled: true # Включает эндпоинты объёма логов
+  retention_period: 720h # Период хранения данных (30 дней)
+  deletion_mode: filter-and-delete # Режим удаления: фильтрация и удаление
+  max_query_length: 721h # Макс. длина запроса (30d1h)_ОПАСНО_ОПАСНО_ОПАСНО_ОПАСНО_ОПАСНО_ОПАСНО
+  reject_old_samples_max_age: 168h # Макс. возраст семпла (168h)
+  max_streams_per_user: 10000 # Макс. потоков на пользователя (локально)
+  max_global_streams_per_user: 0 # Макс. потоков глобально (0 = без лимита)_ОПАСНО_ОПАСНО_ОПАСНО_ОПАСНО_ОПАСНО_ОПАСНО
+  max_label_names_per_series: 100 # Макс. лейблов на серию (100)
+  #ОПАСНЫЕ ЗНАЧЕНИЯ
+  ingestion_rate_mb: 10485760 # Лимит приёма МБ/с на пользователя (10ТБ)
+  ingestion_burst_size_mb: 204800 # Макс. burst при приёме МБ (200ГБ)
+  max_line_size: 209715200 # Макс. размер строки лога (200ТБ)
+  #
+  max_query_series: 10000 # Макс. уникальных серий в запросе (10000)
+  max_query_parallelism: 16 # Макс. параллельных запросов (по умолч.: 32)
+  query_timeout: 300s # Таймаут запроса (по умолч.: 1m)
+  max_cache_freshness_per_query: 15m # Макс. свежесть кеша (по умолч.: 10m)
+  max_structured_metadata_size: 209715200 # Макс. размер структурированных метаданных
+  per_stream_rate_limit: 100MB # Макс. скорость на поток (100MB)
+  per_stream_rate_limit_burst: 200MB # Макс. burst на поток (200MB)
+  split_queries_by_interval: 1h # Интервал разбивки запросов (1h)
+  #
+  max_entries_limit_per_query: 100000 # Макс. кол-во записей лога, возвращаемых за один запрос (по умолч.: 5000)
+  max_chunks_per_query: 2000000 # Макс. кол-во чанков, читаемых за один запрос (по умолч.: 2000000)

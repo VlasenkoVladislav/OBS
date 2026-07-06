@@ -1,0 +1,33 @@
+services:
+  pg_grafana:
+    container_name: pg_grafana
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "${PG_DB_NAME}"
+      POSTGRES_USER: "${PG_DB_USER}"
+      POSTGRES_PASSWORD: "${PG_DB_PASSWORD}"
+    ports:
+      - "5432:5433"
+    volumes:
+      - ./data/pg_grafana:/var/lib/postgresql/data
+    networks:
+      - observability-net
+
+  postgres-exporter:
+    container_name: postgres-exporter
+    image: quay.io/prometheuscommunity/postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${PG_DB_USER}:${PG_DB_PASSWORD}@pg_grafana:5432/${PG_DB_NAME}?sslmode=disable"
+    ports:
+      - "9187:9187"
+    restart: unless-stopped
+    depends_on:
+      - pg_grafana
+    networks:
+      - observability-net
+
+networks:
+  observability-net:
+    external: true
+    name: observability_observability-net

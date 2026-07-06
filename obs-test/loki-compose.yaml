@@ -1,0 +1,238 @@
+services:
+  # MAIN — distributor, scheduler, compactor, index-gateway
+  loki-main:
+    image: grafana/loki:3.7
+    container_name: loki-main
+    hostname: loki-main
+    ports:
+      - "3100:3100"
+      - "9097:9097"
+    command:
+      - "-querier.frontend-client.grpc-max-recv-msg-size=524288000"
+      - "-querier.frontend-client.grpc-max-send-msg-size=524288000"
+      - "-frontend.grpc-client-config.grpc-max-recv-msg-size=524288000"
+      - "-frontend.grpc-client-config.grpc-max-send-msg-size=524288000"
+      - "-ingester.client.grpc-max-recv-msg-size=524288000"
+      - "-ingester.client.grpc-max-send-msg-size=524288000"
+      - "-config.file=/etc/loki/loki-config.yml"
+      - "-config.expand-env=true"
+    volumes:
+      - ./config/loki/loki-config-main.yml:/etc/loki/loki-config.yml
+      - ./data/loki-main:/data/loki
+    restart: unless-stopped
+    networks:
+      observability-net:
+        aliases:
+          - loki-main
+    environment:
+      - TZ=Europe/Moscow
+      - INSTANCE_ID=main
+      - INSTANCE_ADDR=loki-main
+      - HOSTNAME=loki-main
+
+  # Ингерстер 1
+  loki-ingester-1:
+    image: grafana/loki:3.7
+    container_name: loki-1
+    hostname: loki-1
+    ports:
+      - "3101:3100"
+    command:
+      - "-ingester.client.grpc-max-recv-msg-size=536870912"
+      - "-ingester.client.grpc-max-send-msg-size=536870912"
+      - "-config.file=/etc/loki/loki-config.yml"
+      - "-config.expand-env=true"
+    volumes:
+      - ./config/loki/loki-config-ingester.yml:/etc/loki/loki-config.yml
+      - ./data/loki-1:/data/loki
+    restart: unless-stopped
+    networks:
+      observability-net:
+        aliases:
+          - loki-1
+    depends_on:
+      - loki-main
+    environment:
+      - TZ=Europe/Moscow
+      - INSTANCE_ID=ingester-1
+      - INSTANCE_ADDR=loki-ingester-1
+      - HOSTNAME=loki-ingester-1
+
+  # Ингерстер 2
+  loki-ingester-2:
+    image: grafana/loki:3.7
+    container_name: loki-2
+    hostname: loki-2
+    ports:
+      - "3102:3100"
+    command:
+      - "-ingester.client.grpc-max-recv-msg-size=536870912"
+      - "-ingester.client.grpc-max-send-msg-size=536870912"
+      - "-config.file=/etc/loki/loki-config.yml"
+      - "-config.expand-env=true"
+    volumes:
+      - ./config/loki/loki-config-ingester.yml:/etc/loki/loki-config.yml
+      - ./data/loki-2:/data/loki
+    restart: unless-stopped
+    networks:
+      observability-net:
+        aliases:
+          - loki-2
+    depends_on:
+      - loki-main
+    environment:
+      - TZ=Europe/Moscow
+      - INSTANCE_ID=ingester-2
+      - INSTANCE_ADDR=loki-ingester-2
+      - HOSTNAME=loki-ingester-2
+
+  # Ингерстер 3
+  loki-ingester-3:
+    image: grafana/loki:3.7
+    container_name: loki-3
+    hostname: loki-3
+    ports:
+      - "3103:3100"
+    command:
+      - "-ingester.client.grpc-max-recv-msg-size=536870912"
+      - "-ingester.client.grpc-max-send-msg-size=536870912"
+      - "-config.file=/etc/loki/loki-config.yml"
+      - "-config.expand-env=true"
+    volumes:
+      - ./config/loki/loki-config-ingester.yml:/etc/loki/loki-config.yml
+      - ./data/loki-3:/data/loki
+    restart: unless-stopped
+    networks:
+      observability-net:
+        aliases:
+          - loki-3
+    depends_on:
+      - loki-main
+    environment:
+      - TZ=Europe/Moscow
+      - INSTANCE_ID=ingester-3
+      - INSTANCE_ADDR=loki-ingester-3
+      - HOSTNAME=loki-ingester-3
+
+  # QUERIER 1
+  loki-querier-1:
+    image: grafana/loki:3.7
+    container_name: loki-querier-1
+    hostname: loki-querier-1
+    ports:
+      - "3104:3100"
+    command:
+      - "-config.file=/etc/loki/loki-config.yml"
+      - "-target=querier"
+      - "-ingester.client.grpc-max-recv-msg-size=536870912"
+      - "-ingester.client.grpc-max-send-msg-size=536870912"
+    volumes:
+      - ./config/loki/loki-config-querier.yml:/etc/loki/loki-config.yml
+      - ./data/loki-querier-1:/data/loki
+    restart: unless-stopped
+    networks:
+      observability-net:
+        aliases:
+          - loki-querier-1
+    depends_on:
+      - loki-main
+    environment:
+      - TZ=Europe/Moscow
+      - INSTANCE_ID=querier-1
+      - INSTANCE_ADDR=loki-querier-1
+      - HOSTNAME=loki-querier-1
+
+  # QUERIER 2
+  loki-querier-2:
+    image: grafana/loki:3.7
+    container_name: loki-querier-2
+    hostname: loki-querier-2
+    ports:
+      - "3105:3100"
+    command:
+      - "-config.file=/etc/loki/loki-config.yml"
+      - "-target=querier"
+      - "-ingester.client.grpc-max-recv-msg-size=536870912"
+      - "-ingester.client.grpc-max-send-msg-size=536870912"
+    volumes:
+      - ./config/loki/loki-config-querier.yml:/etc/loki/loki-config.yml
+      - ./data/loki-querier-2:/data/loki
+    restart: unless-stopped
+    networks:
+      observability-net:
+        aliases:
+          - loki-querier-2
+    depends_on:
+      - loki-main
+    environment:
+      - TZ=Europe/Moscow
+      - INSTANCE_ID=querier-2
+      - INSTANCE_ADDR=loki-querier-2
+      - HOSTNAME=loki-querier-2
+
+  # QUERIER 3
+  loki-querier-3:
+    image: grafana/loki:3.7
+    container_name: loki-querier-3
+    hostname: loki-querier-3
+    ports:
+      - "3106:3100"
+    command:
+      - "-config.file=/etc/loki/loki-config.yml"
+      - "-target=querier"
+      - "-ingester.client.grpc-max-recv-msg-size=536870912"
+      - "-ingester.client.grpc-max-send-msg-size=536870912"
+    volumes:
+      - ./config/loki/loki-config-querier.yml:/etc/loki/loki-config.yml
+      - ./data/loki-querier-3:/data/loki
+    restart: unless-stopped
+    networks:
+      observability-net:
+        aliases:
+          - loki-querier-3
+    depends_on:
+      - loki-main
+    environment:
+      - TZ=Europe/Moscow
+      - INSTANCE_ID=querier-3
+      - INSTANCE_ADDR=loki-querier-3
+      - HOSTNAME=loki-querier-3
+
+  # QUERY FRONTEND
+  loki-query-frontend:
+    image: grafana/loki:3.7
+    container_name: loki-query-frontend
+    hostname: loki-query-frontend
+    ports:
+      - "3110:3100"
+    command:
+      - "-config.file=/etc/loki/loki-config.yml"
+      - "-target=query-frontend"
+      - "-querier.frontend-client.grpc-max-recv-msg-size=524288000"
+      - "-querier.frontend-client.grpc-max-send-msg-size=524288000"
+      - "-frontend.grpc-client-config.grpc-max-recv-msg-size=524288000"
+      - "-frontend.grpc-client-config.grpc-max-send-msg-size=524288000"
+    restart: unless-stopped
+    networks:
+      observability-net:
+        aliases:
+          - loki-query-frontend
+    depends_on:
+      loki-querier-1:
+        condition: service_started
+      loki-querier-2:
+        condition: service_started
+      loki-querier-3:
+        condition: service_started
+    environment:
+      - TZ=Europe/Moscow
+      - INSTANCE_ID=query-frontend
+      - INSTANCE_ADDR=loki-query-frontend
+      - HOSTNAME=loki-query-frontend
+    volumes:
+      - ./config/loki/loki-config-querier.yml:/etc/loki/loki-config.yml
+
+networks:
+  observability-net:
+    external: true
+    name: observability_observability-net

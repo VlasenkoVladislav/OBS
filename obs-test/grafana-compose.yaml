@@ -1,0 +1,25 @@
+services:
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:12.4
+    user: "472:472"
+    environment:
+      GF_DATABASE_TYPE: postgres
+      GF_DATABASE_HOST: pg_grafana:5432
+      GF_DATABASE_NAME: "my_grafana_db"
+      GF_DATABASE_USER: "my_grafana_user"
+      GF_DATABASE_PASSWORD: "my_grafana_pwd"
+      GF_DATABASE_SSL_MODE: disable
+    restart: unless-stopped
+    ports:
+      - 3000:3000
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+      - /tmp/grafana_image_cache:/tmp/grafana_image_cache
+    networks:
+      - observability-net
+
+networks:
+  observability-net:
+    external: true
+    name: observability_observability-net

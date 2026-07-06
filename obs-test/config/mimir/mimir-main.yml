@@ -1,0 +1,98 @@
+target: distributor,query-frontend,query-scheduler,querier,ruler,alertmanager,compactor,store-gateway
+multitenancy_enabled: false
+no_auth_tenant: "anonymous"
+
+server:
+  http_listen_port: 9009
+  grpc_listen_port: 9095
+
+api:
+  prometheus_http_prefix: /prometheus
+
+memberlist:
+  bind_addr: [0.0.0.0]
+  bind_port: 9096
+  join_members:
+    - "mimir-main:9096"
+    - "mimir-ingester-1:9096"
+    - "mimir-ingester-2:9096"
+
+distributor:
+  ring:
+    kvstore:
+      store: memberlist
+
+ingester_client:
+  grpc_client_config:
+    max_send_msg_size: 104857600
+
+querier:
+  timeout: 2m
+  max_concurrent: 20
+
+store_gateway:
+  sharding_ring:
+    kvstore:
+      store: memberlist
+
+ruler_storage:
+  s3:
+    bucket_name: mimir
+  storage_prefix: ruler
+ruler:
+  enable_api: true
+  rule_path: /data/mimir/data-ruler
+  evaluation_interval: 30s
+  poll_interval: 30s
+  alertmanager_url: http://localhost:9009/alertmanager
+  ring:
+    kvstore:
+      store: memberlist
+
+alertmanager_storage:
+  s3:
+    bucket_name: mimir
+  storage_prefix: alertmanager
+
+alertmanager:
+  enable_api: true
+  data_dir: /data/mimir/alertmanager-data
+
+compactor:
+  data_dir: /home/ubuntu/observability/data/mimir/compactor
+  compaction_interval: 60m
+  sharding_ring:
+    kvstore:
+      store: memberlist
+
+blocks_storage:
+  s3:
+    bucket_name: mimir
+  storage_prefix: blocks
+  tsdb:
+    dir: /data/mimir/tsdb
+    block_ranges_period: [2h]
+    retention_period: 720h
+
+common:
+  storage:
+    backend: s3
+    s3:
+      endpoint: minio:9000
+      bucket_name: mimir
+      access_key_id: KAWN6W9RLRHOTUV8RNMB
+      secret_access_key: tsurs59GbYFejS01+lUmoP6ZiCwaKugB1sWPAZbE
+      insecure: true
+
+limits:
+  ingestion_rate: 100000
+  ingestion_burst_size: 200000
+  max_global_series_per_user: 0
+  max_global_series_per_metric: 0
+  out_of_order_time_window: 6h
+  max_fetched_chunks_per_query: 2000000
+  max_fetched_series_per_query: 100000
+  max_query_parallelism: 32
+
+usage_stats:
+  enabled: false
